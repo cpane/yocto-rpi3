@@ -1,0 +1,30 @@
+# Local configuration for Raspberry Pi 3 build with cpane distro
+
+# Select machine
+MACHINE = "raspberrypi3"
+
+# Use the custom distro
+DISTRO = "cpane"
+
+# Build parallelism
+BB_NUMBER_THREADS = "8"
+PARALLEL_MAKE = "-j 8"
+
+# Optional: use shared DL and SSTATE directories outside of build dir
+# DL_DIR ?= "${TOPDIR}/../downloads"
+# SSTATE_DIR ?= "${TOPDIR}/../sstate-cache"
+
+# Disable interactive patch resolution
+PATCHRESOLVE = "noop"
+
+# Disk space monitor settings (optional safety)
+BB_DISKMON_DIRS ??= "\
+    STOPTASKS,${TMPDIR},1G,100K \
+    STOPTASKS,${DL_DIR},1G,100K \
+    STOPTASKS,${SSTATE_DIR},1G,100K \
+    HALT,${TMPDIR},100M,1K \
+    HALT,${DL_DIR},100M,1K \
+    HALT,${SSTATE_DIR},100M,1K"
+
+CONF_VERSION = "2"
+
