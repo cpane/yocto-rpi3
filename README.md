@@ -1,154 +1,106 @@
-# Yocto RPi3 Build Environment
+# Yocto Raspberry Pi 3 with cpane Distribution
 
-This repository defines a Yocto Project build environment for Raspberry Pi 3 using a custom distribution (`cpane`) and a structured layout for reproducible, automated builds.
+This repository provides a Yocto build setup for Raspberry Pi 3 using a custom "cpane" distribution with systemd, networking, and useful utilities pre-configured.
 
----
+## Quick Start
 
-## 🧱 Layers Used
-
-This build setup includes the following layers as Git submodules:
-
-- `poky` (Scarthgap release)
-- `meta-raspberrypi`
-- `meta-openembedded` (meta-oe, meta-networking, meta-python, meta-multimedia)
-- `meta-cpane` – Custom layer with:
-  - Custom distribution: `cpane`
-  - HWDB workaround for systemd
-  - Useful development and networking tools
-
----
-
-## 🐧 Custom Distro: `cpane`
-
-The custom distro is defined in `meta-cpane/conf/distro/cpane.conf`. Features:
-
-- `systemd` as the init system
-- Ethernet and WiFi support
-- Common developer tools installed (e.g., `htop`, `wget`, `nano`)
-- `udev-hwdb` blacklisted to avoid postinstall issues
-- Image type set to `rpi-sdimg`
-- Serial console enabled via `ttyAMA0`
-- sysvinit explicitly removed for a clean systemd-only setup
-
----
-
-## 🛠️ Setup Instructions
-
-To initialize and build the environment from scratch:
-
+### Option 1: Yocto-Native Approach (Recommended)
 ```bash
-# 1. Clone the repository and submodules
-git clone https://github.com/YOUR_USERNAME/yocto-rpi3.git
+git clone --recursive <your-repo-url>
 cd yocto-rpi3
-
-# 2. Source the setup script (this is important — DO NOT just run it)
-source scripts/setup-build.sh
-
-# 3. Build the image
+source setup-env
 bitbake core-image-minimal
 ```
 
-This will produce an SD card image here:
-
-```
-build/tmp/deploy/images/raspberrypi3/core-image-minimal-raspberrypi3.rpi-sdimg
-```
-
-You can flash it to an SD card with:
-
+### Option 2: Automated Setup Script
 ```bash
-sudo dd if=build/tmp/deploy/images/raspberrypi3/core-image-minimal-raspberrypi3.rpi-sdimg of=/dev/sdX bs=4M status=progress && sync
+git clone --recursive <your-repo-url>
+cd yocto-rpi3
+./scripts/setup-build.sh
 ```
 
-Replace `/dev/sdX` with the correct device node for your SD card.
-
----
-
-## 📜 `scripts/setup-build.sh` Contents
-
-You must **source** this script (e.g., `source scripts/setup-build.sh`) so that your environment is properly configured.
-
+### Option 3: Custom Build Directory
 ```bash
-#!/bin/bash
-set -e
-
-# Get absolute path to repo root
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-
-# Point TEMPLATECONF to our custom template
-export TEMPLATECONF="${BASE_DIR}/meta-cpane/conf/templates/cpane"
-
-# Pull submodules
-echo "📦 Initializing submodules..."
-git submodule update --init --recursive
-
-# Set up the build environment
-echo "🛠 Setting up build directory..."
-source "${BASE_DIR}/poky/oe-init-build-env" "${BASE_DIR}/build"
-
-echo "✅ Build environment is ready in ./build/"
-echo "➡️  Run 'bitbake core-image-minimal' to build your image"
-```
-
----
-
-## 📁 Directory Layout
-
-```
-yocto-rpi3/
-├── build/                        # Created after setup
-├── meta-cpane/                  # Your custom layer
-│   ├── conf/
-│   │   ├── distro/
-│   │   │   ├── cpane.conf
-│   │   │   └── include/nohwdb.inc
-│   │   ├── layer.conf
-│   │   └── templates/cpane/
-│   │       ├── bblayers.conf.template
-│   │       └── local.conf.template
-│   ├── recipes-core/
-│   │   ├── images/core-image-minimal.bbappend
-│   │   └── systemd/systemd_%.bbappend
-│   └── recipes-example/
-│       └── example/example_0.1.bb
-├── meta-openembedded/           # Submodule
-├── meta-raspberrypi/            # Submodule
-├── poky/                        # Submodule
-└── scripts/
-    └── setup-build.sh
-```
-
----
-
-## 🧹 Clean Build (Optional)
-
-```bash
-rm -rf build tmp sstate-cache
-source scripts/setup-build.sh
+git clone --recursive <your-repo-url>
+cd yocto-rpi3
+source setup-env my-custom-build
 bitbake core-image-minimal
 ```
 
----
+All approaches will automatically:
+- Use the Raspberry Pi 3 machine configuration (`MACHINE = "raspberrypi3"`)
+- Apply the cpane custom distribution (`DISTRO = "cpane"`)
+- Configure all required layers (raspberrypi, openembedded, cpane)
+- Set up systemd as the init system with networking features
+- Include essential utilities and development tools
 
-## ✅ Result
+## What's Included
 
-After a successful build, you'll have an image you can flash to an SD card and boot on a Raspberry Pi 3. It will boot with:
+### cpane Distribution Features
+- **Target**: Raspberry Pi 3
+- **Init System**: systemd with usrmerge
+- **Networking**: WiFi, Ethernet, ConnMan, DHCP
+- **Utilities**: SSH, nano, htop, wget, curl, rsync
+- **Image Format**: SD card image (rpi-sdimg)
+- **Serial Console**: 115200 baud on ttyAMA0
 
-- Systemd as PID 1
-- Serial console on UART0
-- SSH server enabled
-- Networking tools pre-installed
+### Layer Structure
+- `meta-cpane/`: Custom layer with cpane distribution
+- `meta-raspberrypi/`: Raspberry Pi BSP layer
+- `meta-openembedded/`: Additional OE layers (oe, multimedia, networking, python)
+- `poky/`: Core Yocto Project reference distribution
 
----
+## Building Images
 
-## 🧑‍💻 Author
+Once the environment is set up:
 
-Chris Pane  
-https://github.com/cpane
+```bash
+# Build minimal image
+bitbake core-image-minimal
 
----
+# Build image with development tools
+bitbake core-image-full-cmdline
 
-## 📜 License
+# Build image with GUI (if supported)
+bitbake core-image-sato
+```
 
-MIT License – See `meta-cpane/COPYING.MIT`
+Images will be created in `build/tmp/deploy/images/raspberrypi3/`.
 
+## Configuration Details
+
+The setup uses Yocto's TEMPLATECONF mechanism to automatically configure builds with the cpane distribution templates, ensuring:
+- No manual editing of build configuration files
+- Consistent setup across different machines
+- Standard Yocto workflow compatibility
+
+### Template Files
+- `meta-cpane/conf/templates/cpane/local.conf.sample`: Machine and distribution settings
+- `meta-cpane/conf/templates/cpane/bblayers.conf.sample`: Layer configuration
+
+## Customization
+
+To modify the distribution:
+1. Edit `meta-cpane/conf/distro/cpane.conf` for distribution-wide changes
+2. Update templates in `meta-cpane/conf/templates/cpane/` for build defaults
+3. Add recipes to `meta-cpane/recipes-*` directories for additional software
+
+## Development Workflow
+
+```bash
+# Set up development environment
+source poky/oe-init-build-env
+
+# Make changes to meta-cpane layer
+# Build and test
+bitbake core-image-minimal
+
+# Deploy to SD card (replace /dev/sdX with your SD card)
+sudo dd if=build/tmp/deploy/images/raspberrypi3/core-image-minimal-raspberrypi3.rpi-sdimg of=/dev/sdX bs=1M status=progress
+```
+
+## Requirements
+
+- Host system with Yocto Project dependencies installed
+- At least 50GB free disk space
+- 8GB+ RAM recommended for parallel builds

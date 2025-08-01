@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# Serial port test utility for cpane distro
+# Usage: serial-test [device] [baudrate]
+
+DEVICE=${1:-/dev/ttyAMA0}
+BAUDRATE=${2:-115200}
+
+echo "Serial Port Test Utility"
+echo "========================"
+echo "Device: $DEVICE"
+echo "Baud Rate: $BAUDRATE"
+echo ""
+
+# Check if device exists
+if [ ! -e "$DEVICE" ]; then
+    echo "ERROR: Serial device $DEVICE does not exist!"
+    echo "Available serial devices:"
+    ls -la /dev/tty* 2>/dev/null | grep -E "(ttyAMA|ttyS|ttyUSB|ttyACM)" || echo "  No serial devices found"
+    exit 1
+fi
+
+# Check device permissions
+if [ ! -r "$DEVICE" ] || [ ! -w "$DEVICE" ]; then
+    echo "WARNING: You may not have read/write permissions for $DEVICE"
+    echo "Try running as root or add your user to the dialout group:"
+    echo "  sudo usermod -a -G dialout \$USER"
+    echo ""
+fi
+
+# Display device info
+echo "Device information:"
+echo "  Permissions: $(ls -l $DEVICE)"
+echo "  Groups: $(stat -c %G $DEVICE)"
+echo ""
+
+# Test basic connectivity
+echo "Testing serial port connectivity..."
+echo "Setting up serial port parameters..."
+
+# Configure the serial port
+stty -F "$DEVICE" "$BAUDRATE" cs8 -cstopb -parenb raw -echo
+
+if [ $? -eq 0 ]; then
+    echo "Serial port configured successfully!"
+    echo ""
+    echo "You can now test the serial port by:"
+    echo "1. Connecting another device to GPIO pins 14 (TX) and 15 (RX)"
+    echo "2. Using a terminal program like: screen $DEVICE $BAUDRATE"
+    echo "3. Or using: minicom -D $DEVICE -b $BAUDRATE"
+    echo ""
+    echo "To send a test message: echo 'Hello Serial!' > $DEVICE"
+    echo "To read from serial: cat $DEVICE"
+else
+    echo "ERROR: Failed to configure serial port!"
+    exit 1
+fi

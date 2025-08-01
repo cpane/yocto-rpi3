@@ -1,0 +1,19 @@
+#!/bin/bash
+# Yocto environment setup for cpane distribution
+# Usage: source setup-env [build-directory]
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    echo "Error: This script must be sourced, not executed."
+    echo "Usage: source setup-env [build-directory]"
+    exit 1
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${1:-build}"
+
+echo "🛠  Setting up Yocto build environment for cpane distribution..."
+export TEMPLATECONF="${SCRIPT_DIR}/meta-cpane/conf/templates/cpane"
+source "${SCRIPT_DIR}/poky/oe-init-build-env" "${BUILD_DIR}"
+
+echo "✅ Build environment ready for Raspberry Pi 3 with cpane distribution!"
+echo "🚀 Configuration: MACHINE=raspberrypi3, DISTRO=cpane"
